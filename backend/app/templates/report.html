@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 18mm;
+      @bottom-center {
+        content: "Niwue Gebouwrapport · " attr(data-bag-id) " · Pagina " counter(page) " van " counter(pages);
+        font-size: 9px;
+        color: #9ca3af;
+      }
+    }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .logo { font-size: 22px; font-weight: 700; color: #2563eb; letter-spacing: -0.5px; }
+    .header-meta { text-align: right; font-size: 9px; color: #6b7280; }
+
+    /* Section titles */
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e40af;
+      border-left: 3px solid #2563eb;
+      padding-left: 8px;
+      margin: 18px 0 8px;
+    }
+
+    /* Key-value grid */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+    .kv { display: flex; flex-direction: column; }
+    .kv-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kv-value { font-size: 11px; font-weight: 600; }
+
+    /* Risk score badge */
+    .risk-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .risk-low    { background: #d1fae5; color: #065f46; }
+    .risk-medium { background: #fef3c7; color: #92400e; }
+    .risk-high   { background: #fee2e2; color: #991b1b; }
+
+    /* AI analysis block */
+    .ai-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 10.5px;
+      color: #374151;
+      white-space: pre-wrap;
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 8.5px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body data-bag-id="{{ building.bag_id }}">
+
+  <div class="header">
+    <div class="logo">niwue</div>
+    <div class="header-meta">
+      Gebouwrapport<br />
+      {{ building.address }}<br />
+      Gegenereerd op {{ generated_at }}
+    </div>
+  </div>
+
+  <h2>Gebouwgegevens</h2>
+  <div class="grid">
+    <div class="kv"><span class="kv-label">Adres</span><span class="kv-value">{{ building.address or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">BAG ID</span><span class="kv-value">{{ building.bag_id or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">Bouwjaar</span><span class="kv-value">{{ building.build_year or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">Gebruiksdoel</span><span class="kv-value">{{ building.use_type or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">Oppervlakte</span><span class="kv-value">{% if building.area %}{{ building.area }} m²{% else %}–{% endif %}</span></div>
+    <div class="kv"><span class="kv-label">Monument</span><span class="kv-value">{% if building.is_monument %}Ja{% else %}Nee{% endif %}</span></div>
+  </div>
+
+  <h2>Risicoscore</h2>
+  {% set score = building.risk_score or 0 %}
+  {% if score < 40 %}
+    <span class="risk-badge risk-low">{{ score }} / 100 – Laag risico</span>
+  {% elif score < 70 %}
+    <span class="risk-badge risk-medium">{{ score }} / 100 – Gemiddeld risico</span>
+  {% else %}
+    <span class="risk-badge risk-high">{{ score }} / 100 – Hoog risico</span>
+  {% endif %}
+
+  <h2>Energie & Milieu</h2>
+  <div class="grid">
+    <div class="kv"><span class="kv-label">Energielabel</span><span class="kv-value">{{ building.energy_label or 'Onbekend' }}</span></div>
+    <div class="kv"><span class="kv-label">Overstromingsrisico</span><span class="kv-value">{{ building.flood_risk_zone or 'Onbekend' }}</span></div>
+    <div class="kv"><span class="kv-label">Bodemtype</span><span class="kv-value">{{ building.soil_type or 'Onbekend' }}</span></div>
+  </div>
+
+  <h2>Buurtinformatie</h2>
+  <div class="grid">
+    <div class="kv"><span class="kv-label">Buurt</span><span class="kv-value">{{ building.neighborhood or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">Gemeente</span><span class="kv-value">{{ building.municipality or '–' }}</span></div>
+    <div class="kv"><span class="kv-label">WOZ-waarde (gem.)</span><span class="kv-value">{% if building.avg_woz_value %}€ {{ "{:,.0f}".format(building.avg_woz_value) }}{% else %}–{% endif %}</span></div>
+  </div>
+
+  {% if building.ai_analysis %}
+  <h2>AI-risicoanalyse</h2>
+  <div class="ai-box">{{ building.ai_analysis }}</div>
+  {% endif %}
+
+  <div class="disclaimer">
+    Dit rapport is gegenereerd op basis van publiek beschikbare gegevens (BAG, EP-Online, KNMI, Risicokaart, CBS) en een AI-analyse.
+    Niwue B.V. aanvaardt geen aansprakelijkheid voor beslissingen genomen op basis van dit rapport.
+    Raadpleeg altijd een bouwkundig adviseur voor een volledige inspectie.
+  </div>
+
+</body>
+</html>
